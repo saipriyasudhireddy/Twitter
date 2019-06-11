@@ -1,18 +1,35 @@
 package org.saipriya.prototype.twitter;
 import redis.clients.jedis.Jedis;
-import java.util.Set;
+import redis.clients.jedis.exceptions.JedisException;
+
 
 
 public class User {
-	public void follow(String follower,String followee) {
-		Jedis jedis1 = App.getJedis(1);
-		// Add followee to follower
-		jedis1.sadd(follower, followee);
-		Jedis jedis4 = App.getJedis(4);
-		// Add follower to followee
-		jedis4.sadd(followee, follower);
+	JedisConfig jc = null;
+	public User() {
+		jc = JedisConfig.getInstance(); 
 	}
 	
+	public void follow(String followee,String follower) {
+		Jedis jedis1 = null;
+		Jedis jedis4= null;
+		try {
+			jedis1 = JedisConfig.getInstance().getJedis(1);
+			// Add followee to follower
+			jedis1.sadd(followee, follower);
+			jedis4 = JedisConfig.getInstance().getJedis(4);
+			// Add follower to followee
+			jedis4.sadd(follower, followee);
+		} catch (JedisException e) {
+			jedis1 = JedisConfig.getInstance().returnBrokenResource(jedis1);
+			jedis4 = JedisConfig.getInstance().returnBrokenResource(jedis4);
+            
+        } finally {
+        	JedisConfig.getInstance().returnResource(jedis1);
+        	JedisConfig.getInstance().returnResource(jedis4);
+        }
+	}
+
 	public static void main(String[] args) {
 		User user = new User();
 		user.follow("1", "2");
